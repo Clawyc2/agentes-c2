@@ -116,7 +116,7 @@ function Sidebar({ activeTab, onTabChange, collapsed, onClose }: {
                 } ${collapsed ? 'md:justify-center' : ''}`}
                 title={collapsed ? tab.label : undefined}
               >
-                <tab.icon className="w-5 h-5 shrink-0" />
+                {tab.icon && <tab.icon className="w-5 h-5 shrink-0" />}
                 {(!collapsed || typeof window !== 'undefined' && window.innerWidth >= 768) && (
                   <span className="font-medium text-sm md:text-base">{tab.label}</span>
                 )}
