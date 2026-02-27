@@ -77,11 +77,29 @@ body {
 }
 
 .btn-primary {
-  @apply px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-gray-900 rounded-lg font-semibold transition-all hover:from-orange-400 hover:to-amber-400;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(to right, #f97316, #f59e0b);
+  color: #111827;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(to right, #fb923c, #fbbf24);
 }
 
 .btn-secondary {
-  @apply px-4 py-2 border border-[var(--gray)] rounded-lg text-[var(--text2)] hover:border-orange-500 hover:text-orange-400 transition-colors;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--gray);
+  border-radius: 0.5rem;
+  color: var(--text2);
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+  border-color: #f97316;
+  color: #f97316;
 }
 
 /* Animations */
