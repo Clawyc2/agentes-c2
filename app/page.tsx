@@ -9,6 +9,7 @@ import {
   Calculator, FileSpreadsheet
 } from 'lucide-react';
 import { getAgents, getTasks, getDashboardStats, deleteAgent } from '@/lib/supabase';
+import { getContableAgents, getContableStats, getContableClientes, getContableTareas } from '@/lib/contable';
 import { EditAgentModal, ViewAgentModal } from '@/components/AgentModals';
 import { ConversationModal } from '@/components/ConversationModal';
 
@@ -468,8 +469,68 @@ function TasksView({ tasks }: { tasks: Task[] }) {
   );
 }
 
-// Vista Despacho Contable (NUEVO)
+// Tipo para agentes contables
+type ContableAgent = {
+  id: string;
+  name: string;
+  specialty: string;
+  status: string;
+  model: string;
+  rules: string;
+  tasks_completed: number;
+  tasks_failed: number;
+  total_tokens: number;
+  last_active: string | null;
+};
+
+// Vista Despacho Contable
 function ContableView() {
+  const [agentes, setAgentes] = useState<ContableAgent[]>([]);
+  const [stats, setStats] = useState({
+    totalClientes: 0,
+    facturasPendientes: 0,
+    tareasPendientes: 0,
+    alertasPendientes: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      const [agentesData, statsData] = await Promise.all([
+        getContableAgents(),
+        getContableStats(),
+      ]);
+      setAgentes(agentesData as ContableAgent[]);
+      setStats(statsData);
+      setLoading(false);
+    }
+    loadData();
+  }, []);
+
+  const specialtyEmoji: Record<string, string> = {
+    'proveedores': '📥',
+    'clientes': '📤',
+    'bancos': '🏦',
+    'alertas': '⚠️',
+    'registro': '📋',
+  };
+
+  const specialtyLabel: Record<string, string> = {
+    'proveedores': 'Facturas Proveedores',
+    'clientes': 'Cobranza Clientes',
+    'bancos': 'Conciliación',
+    'alertas': 'Anomalías',
+    'registro': 'Registro DB',
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-green-400" />
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-3">
@@ -482,48 +543,116 @@ function ContableView() {
         </div>
       </div>
 
-      {/* Estado vacío por ahora */}
-      <div className="flex flex-col items-center justify-center py-20">
-        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center text-5xl mb-6">
-          🧮
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
+        <div className="card p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
+              <Users className="w-5 h-5 text-green-400" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{stats.totalClientes}</p>
+              <p className="text-xs text-[var(--text2)]">Clientes</p>
+            </div>
+          </div>
         </div>
-        <h3 className="text-xl font-bold mb-2">Sección en construcción</h3>
-        <p className="text-[var(--text2)] text-center max-w-md mb-6">
-          Aquí vivirán los agentes especializados en contabilidad:<br />
-          Facturador, Cobrador, Conciliador, Alertador y Registrador.
-        </p>
-        
-        {/* Preview de lo que vendrá */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-2xl mt-6">
-          <div className="card p-4 text-center border-dashed border-2 border-[var(--gray)]">
-            <div className="text-3xl mb-2">📥</div>
-            <p className="font-semibold">Facturador</p>
-            <p className="text-xs text-[var(--text2)]">Proveedores</p>
+        <div className="card p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center">
+              <FileSpreadsheet className="w-5 h-5 text-orange-400" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{stats.facturasPendientes}</p>
+              <p className="text-xs text-[var(--text2)]">Facturas Pendientes</p>
+            </div>
           </div>
-          <div className="card p-4 text-center border-dashed border-2 border-[var(--gray)]">
-            <div className="text-3xl mb-2">📤</div>
-            <p className="font-semibold">Cobrador</p>
-            <p className="text-xs text-[var(--text2)]">Clientes</p>
+        </div>
+        <div className="card p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+              <CheckCircle className="w-5 h-5 text-blue-400" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{stats.tareasPendientes}</p>
+              <p className="text-xs text-[var(--text2)]">Tareas</p>
+            </div>
           </div>
-          <div className="card p-4 text-center border-dashed border-2 border-[var(--gray)]">
-            <div className="text-3xl mb-2">🏦</div>
-            <p className="font-semibold">Conciliador</p>
-            <p className="text-xs text-[var(--text2)]">Bancos</p>
+        </div>
+        <div className="card p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
+              <AlertCircle className="w-5 h-5 text-red-400" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{stats.alertasPendientes}</p>
+              <p className="text-xs text-[var(--text2)]">Alertas</p>
+            </div>
           </div>
-          <div className="card p-4 text-center border-dashed border-2 border-[var(--gray)]">
-            <div className="text-3xl mb-2">⚠️</div>
-            <p className="font-semibold">Alertador</p>
-            <p className="text-xs text-[var(--text2)]">Anomalías</p>
+        </div>
+      </div>
+
+      {/* Agentes Grid */}
+      <h3 className="text-lg font-bold mb-4">Agentes Especializados</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {agentes.map((agente) => (
+          <motion.div
+            key={agente.id}
+            className="card p-4 hover:border-green-500/50 transition-all cursor-pointer"
+            whileHover={{ scale: 1.02 }}
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center text-2xl">
+                  {specialtyEmoji[agente.specialty] || '🤖'}
+                </div>
+                <div>
+                  <h4 className="font-bold">{agente.name}</h4>
+                  <p className="text-xs text-[var(--text2)]">{specialtyLabel[agente.specialty] || agente.specialty}</p>
+                </div>
+              </div>
+              <span className={`px-2 py-1 rounded-full text-xs ${
+                agente.status === 'active' ? 'bg-green-500/20 text-green-400' :
+                agente.status === 'sleeping' ? 'bg-gray-500/20 text-gray-400' :
+                'bg-red-500/20 text-red-400'
+              }`}>
+                {agente.status}
+              </span>
+            </div>
+            
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-[var(--text2)]">Modelo:</span>
+                <span className="font-mono text-xs">{agente.model}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[var(--text2)]">Completadas:</span>
+                <span className="text-green-400">{agente.tasks_completed}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[var(--text2)]">Fallidas:</span>
+                <span className="text-red-400">{agente.tasks_failed}</span>
+              </div>
+            </div>
+            
+            {agente.rules && (
+              <p className="mt-3 text-xs text-[var(--text2)] line-clamp-2">{agente.rules}</p>
+            )}
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Orquestador Card */}
+      <div className="mt-6 card p-6 border-2 border-green-500/30 bg-gradient-to-r from-green-500/5 to-emerald-500/5">
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-orange-400 to-amber-600 flex items-center justify-center text-3xl">
+            👑
           </div>
-          <div className="card p-4 text-center border-dashed border-2 border-[var(--gray)]">
-            <div className="text-3xl mb-2">📋</div>
-            <p className="font-semibold">Registrador</p>
-            <p className="text-xs text-[var(--text2)]">Supabase</p>
+          <div className="flex-1">
+            <h3 className="text-lg font-bold">Clawy - Orquestador</h3>
+            <p className="text-sm text-[var(--text2)]">Coordina todos los agentes contables. Recibe instrucciones de Luis vía Telegram y delega tareas especializadas.</p>
           </div>
-          <div className="card p-4 text-center border-dashed border-2 border-[var(--gray)]">
-            <div className="text-3xl mb-2">👑</div>
-            <p className="font-semibold">Clawy</p>
-            <p className="text-xs text-[var(--text2)]">Orquestador</p>
+          <div className="text-right">
+            <span className="px-3 py-1 rounded-full text-sm bg-green-500/20 text-green-400">Activo</span>
           </div>
         </div>
       </div>
