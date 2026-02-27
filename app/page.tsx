@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { 
   Users, Activity, Zap, Clock, CheckCircle, XCircle,
   Settings, Trash2, Edit, Eye, ChevronRight, Search,
-  AlertCircle, TrendingUp, Calendar, MessageSquare
+  AlertCircle, TrendingUp, Calendar, MessageSquare, Menu, X
 } from 'lucide-react';
 
 // Datos mock para demo
@@ -127,7 +127,11 @@ const MOCK_TASKS = [
 ];
 
 // Componente de Sidebar
-function Sidebar({ activeTab, onTabChange }: { activeTab: string; onTabChange: (tab: string) => void }) {
+function Sidebar({ activeTab, onTabChange, collapsed }: { 
+  activeTab: string; 
+  onTabChange: (tab: string) => void;
+  collapsed: boolean;
+}) {
   const tabs = [
     { id: 'dashboard', icon: Activity, label: 'Dashboard' },
     { id: 'agents', icon: Users, label: 'Agentes' },
@@ -137,17 +141,21 @@ function Sidebar({ activeTab, onTabChange }: { activeTab: string; onTabChange: (
   ];
 
   return (
-    <aside className="w-64 fixed left-0 top-0 h-screen bg-[var(--bg2)] border-r border-[var(--gray)] flex flex-col z-40">
+    <aside className={`fixed left-0 top-0 h-screen bg-[var(--bg2)] border-r border-[var(--gray)] flex flex-col z-40 transition-all duration-300 ${
+      collapsed ? 'w-20' : 'w-64'
+    }`}>
       {/* Logo */}
       <div className="p-6 border-b border-[var(--gray)]">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-400 to-amber-600 flex items-center justify-center text-2xl">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-400 to-amber-600 flex items-center justify-center text-2xl shrink-0">
             🐾
           </div>
-          <div>
-            <h1 className="font-bold text-lg" style={{ fontFamily: 'Syne' }}>Agentes C2</h1>
-            <p className="text-xs text-[var(--text2)]">Command Center</p>
-          </div>
+          {!collapsed && (
+            <div>
+              <h1 className="font-bold text-lg" style={{ fontFamily: 'Syne' }}>Agentes C2</h1>
+              <p className="text-xs text-[var(--text2)]">Command Center</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -161,26 +169,29 @@ function Sidebar({ activeTab, onTabChange }: { activeTab: string; onTabChange: (
               activeTab === tab.id
                 ? 'bg-orange-500/10 border-l-4 border-orange-500 text-orange-400'
                 : 'text-[var(--text)] hover:bg-[var(--bg3)]'
-            }`}
+            } ${collapsed ? 'justify-center' : ''}`}
+            title={collapsed ? tab.label : undefined}
           >
-            <tab.icon className="w-5 h-5" />
-            <span className="font-medium">{tab.label}</span>
+            <tab.icon className="w-5 h-5 shrink-0" />
+            {!collapsed && <span className="font-medium">{tab.label}</span>}
           </button>
         ))}
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-[var(--gray)]">
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--bg3)]">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-amber-600 flex items-center justify-center">
-            👤
-          </div>
-          <div className="flex-1">
-            <p className="font-semibold text-sm">Luis</p>
-            <p className="text-xs text-[var(--text2)]">👑 Owner</p>
+      {!collapsed && (
+        <div className="p-4 border-t border-[var(--gray)]">
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--bg3)]">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-amber-600 flex items-center justify-center shrink-0">
+              👤
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm truncate">Luis</p>
+              <p className="text-xs text-[var(--text2)]">👑 Owner</p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </aside>
   );
 }
@@ -467,6 +478,7 @@ function TasksView() {
 // Main Page
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const renderView = () => {
     switch (activeTab) {
@@ -491,9 +503,21 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[var(--bg)]">
-      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} collapsed={sidebarCollapsed} />
       
-      <main className="ml-64 p-6">
+      {/* Toggle Button */}
+      <button
+        onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+        className="fixed top-4 z-50 p-2 bg-[var(--bg2)] border border-[var(--gray)] rounded-lg hover:bg-[var(--bg3)] transition-colors"
+        style={{ left: sidebarCollapsed ? '5rem' : '16rem' }}
+      >
+        {sidebarCollapsed ? <Menu className="w-5 h-5" /> : <X className="w-5 h-5" />}
+      </button>
+      
+      <main 
+        className="p-6 pt-16 transition-all duration-300"
+        style={{ marginLeft: sidebarCollapsed ? '5rem' : '16rem' }}
+      >
         {renderView()}
       </main>
     </div>
