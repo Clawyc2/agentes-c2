@@ -127,10 +127,11 @@ const MOCK_TASKS = [
 ];
 
 // Componente de Sidebar
-function Sidebar({ activeTab, onTabChange, collapsed }: { 
+function Sidebar({ activeTab, onTabChange, collapsed, onClose }: { 
   activeTab: string; 
   onTabChange: (tab: string) => void;
   collapsed: boolean;
+  onClose: () => void;
 }) {
   const tabs = [
     { id: 'dashboard', icon: Activity, label: 'Dashboard' },
@@ -141,86 +142,110 @@ function Sidebar({ activeTab, onTabChange, collapsed }: {
   ];
 
   return (
-    <aside className={`fixed left-0 top-0 h-screen bg-[var(--bg2)] border-r border-[var(--gray)] flex flex-col z-40 transition-all duration-300 ${
-      collapsed ? 'w-20' : 'w-64'
-    }`}>
-      {/* Logo */}
-      <div className="p-6 border-b border-[var(--gray)]">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-400 to-amber-600 flex items-center justify-center text-2xl shrink-0">
-            🐾
-          </div>
-          {!collapsed && (
-            <div>
-              <h1 className="font-bold text-lg" style={{ fontFamily: 'Syne' }}>Agentes C2</h1>
-              <p className="text-xs text-[var(--text2)]">Command Center</p>
+    <>
+      {/* Overlay para móvil */}
+      <div 
+        className={`fixed inset-0 bg-black/50 z-30 md:hidden transition-opacity ${
+          collapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'
+        }`}
+        onClick={onClose}
+      />
+      
+      <aside className={`fixed left-0 top-0 h-screen bg-[var(--bg2)] border-r border-[var(--gray)] flex flex-col z-40 transition-all duration-300 ${
+        collapsed ? '-translate-x-full md:translate-x-0 md:w-20' : 'translate-x-0 w-64'
+      } md:relative`}>
+        {/* Logo */}
+        <div className="p-4 md:p-6 border-b border-[var(--gray)]">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-orange-400 to-amber-600 flex items-center justify-center text-xl md:text-2xl shrink-0">
+                🐾
+              </div>
+              {!collapsed && (
+                <div>
+                  <h1 className="font-bold text-sm md:text-lg" style={{ fontFamily: 'Syne' }}>Agentes C2</h1>
+                  <p className="text-xs text-[var(--text2)] hidden md:block">Command Center</p>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 py-4">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => onTabChange(tab.id)}
-            className={`w-full flex items-center gap-3 px-6 py-3 transition-all ${
-              activeTab === tab.id
-                ? 'bg-orange-500/10 border-l-4 border-orange-500 text-orange-400'
-                : 'text-[var(--text)] hover:bg-[var(--bg3)]'
-            } ${collapsed ? 'justify-center' : ''}`}
-            title={collapsed ? tab.label : undefined}
-          >
-            <tab.icon className="w-5 h-5 shrink-0" />
-            {!collapsed && <span className="font-medium">{tab.label}</span>}
-          </button>
-        ))}
-      </nav>
-
-      {/* Footer */}
-      {!collapsed && (
-        <div className="p-4 border-t border-[var(--gray)]">
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--bg3)]">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-amber-600 flex items-center justify-center shrink-0">
-              👤
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm truncate">Luis</p>
-              <p className="text-xs text-[var(--text2)]">👑 Owner</p>
-            </div>
+            {/* Close button para móvil */}
+            <button 
+              onClick={onClose}
+              className="md:hidden p-2 hover:bg-[var(--bg3)] rounded-lg"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
         </div>
-      )}
-    </aside>
+
+        {/* Navigation */}
+        <nav className="flex-1 py-2 md:py-4 overflow-y-auto">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => {
+                onTabChange(tab.id);
+                onClose(); // Cierra en móvil
+              }}
+              className={`w-full flex items-center gap-3 px-4 md:px-6 py-3 transition-all ${
+                activeTab === tab.id
+                  ? 'bg-orange-500/10 border-l-4 border-orange-500 text-orange-400'
+                  : 'text-[var(--text)] hover:bg-[var(--bg3)]'
+              } ${collapsed ? 'md:justify-center' : ''}`}
+              title={collapsed ? tab.label : undefined}
+            >
+              <tab.icon className="w-5 h-5 shrink-0" />
+              {(!collapsed || typeof window !== 'undefined' && window.innerWidth >= 768) && (
+                <span className="font-medium text-sm md:text-base">{tab.label}</span>
+              )}
+            </button>
+          ))}
+        </nav>
+
+        {/* Footer */}
+        {!collapsed && (
+          <div className="p-3 md:p-4 border-t border-[var(--gray)]">
+            <div className="flex items-center gap-3 p-2 md:p-3 rounded-xl bg-[var(--bg3)]">
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-orange-400 to-amber-600 flex items-center justify-center text-sm md:text-base shrink-0">
+                👤
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-xs md:text-sm truncate">Luis</p>
+                <p className="text-xs text-[var(--text2)]">👑 Owner</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </aside>
+    </>
   );
 }
 
 // Componente de Header Stats
 function HeaderStats() {
   const stats = [
-    { label: 'Agentes Activos', value: '3', icon: Users, color: 'text-green-400' },
-    { label: 'Tareas Hoy', value: '12', icon: CheckCircle, color: 'text-orange-400' },
-    { label: 'Tokens Hoy', value: '125K', icon: Zap, color: 'text-purple-400' },
-    { label: 'Tasa Éxito', value: '94%', icon: TrendingUp, color: 'text-cyan-400' },
+    { label: 'Agentes', value: '3', icon: Users, color: 'text-green-400' },
+    { label: 'Tareas', value: '12', icon: CheckCircle, color: 'text-orange-400' },
+    { label: 'Tokens', value: '125K', icon: Zap, color: 'text-purple-400' },
+    { label: 'Éxito', value: '94%', icon: TrendingUp, color: 'text-cyan-400' },
   ];
 
   return (
-    <div className="grid grid-cols-4 gap-4 mb-6">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-4 md:mb-6">
       {stats.map((stat, i) => (
         <motion.div
           key={i}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.1 }}
-          className="card flex items-center gap-4"
+          className="card flex items-center gap-2 md:gap-4 p-3 md:p-4"
         >
-          <div className={`w-12 h-12 rounded-xl bg-[var(--bg3)] flex items-center justify-center ${stat.color}`}>
-            <stat.icon className="w-6 h-6" />
+          <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl bg-[var(--bg3)] flex items-center justify-center ${stat.color}`}>
+            <stat.icon className="w-5 h-5 md:w-6 md:h-6" />
           </div>
           <div>
-            <p className="text-2xl font-bold">{stat.value}</p>
-            <p className="text-sm text-[var(--text2)]">{stat.label}</p>
+            <p className="text-xl md:text-2xl font-bold">{stat.value}</p>
+            <p className="text-xs md:text-sm text-[var(--text2)]">{stat.label}</p>
           </div>
         </motion.div>
       ))}
@@ -296,18 +321,18 @@ function AgentCard({ agent, onEdit, onDelete, onView }: {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-2 mb-4 text-center">
+      <div className="grid grid-cols-3 gap-2 mb-3 md:mb-4 text-center">
         <div className="p-2 rounded-lg bg-[var(--bg3)]">
-          <p className="text-lg font-bold text-green-400">{agent.tasks_completed}</p>
-          <p className="text-xs text-[var(--text2)]">Completadas</p>
+          <p className="text-base md:text-lg font-bold text-green-400">{agent.tasks_completed}</p>
+          <p className="text-[10px] md:text-xs text-[var(--text2)]">Completadas</p>
         </div>
         <div className="p-2 rounded-lg bg-[var(--bg3)]">
-          <p className="text-lg font-bold text-red-400">{agent.tasks_failed}</p>
-          <p className="text-xs text-[var(--text2)]">Fallidas</p>
+          <p className="text-base md:text-lg font-bold text-red-400">{agent.tasks_failed}</p>
+          <p className="text-[10px] md:text-xs text-[var(--text2)]">Fallidas</p>
         </div>
         <div className="p-2 rounded-lg bg-[var(--bg3)]">
-          <p className="text-lg font-bold text-purple-400">{(agent.total_tokens / 1000).toFixed(1)}K</p>
-          <p className="text-xs text-[var(--text2)]">Tokens</p>
+          <p className="text-base md:text-lg font-bold text-purple-400">{(agent.total_tokens / 1000).toFixed(1)}K</p>
+          <p className="text-[10px] md:text-xs text-[var(--text2)]">Tokens</p>
         </div>
       </div>
 
@@ -384,12 +409,12 @@ function DashboardView() {
       <HeaderStats />
       
       {/* Agentes */}
-      <div className="mb-8">
-        <h2 className="text-xl font-bold mb-4 flex items-center gap-2" style={{ fontFamily: 'Syne' }}>
-          <Users className="w-5 h-5 text-orange-400" />
+      <div className="mb-6 md:mb-8">
+        <h2 className="text-lg md:text-xl font-bold mb-3 md:mb-4 flex items-center gap-2" style={{ fontFamily: 'Syne' }}>
+          <Users className="w-4 h-4 md:w-5 md:h-5 text-orange-400" />
           Agentes Activos
         </h2>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
           {MOCK_AGENTS.map((agent) => (
             <AgentCard
               key={agent.id}
@@ -404,8 +429,8 @@ function DashboardView() {
 
       {/* Tareas Recientes */}
       <div>
-        <h2 className="text-xl font-bold mb-4 flex items-center gap-2" style={{ fontFamily: 'Syne' }}>
-          <Activity className="w-5 h-5 text-orange-400" />
+        <h2 className="text-lg md:text-xl font-bold mb-3 md:mb-4 flex items-center gap-2" style={{ fontFamily: 'Syne' }}>
+          <Activity className="w-4 h-4 md:w-5 md:h-5 text-orange-400" />
           Tareas Recientes
         </h2>
         <div className="space-y-2">
@@ -422,22 +447,22 @@ function DashboardView() {
 function AgentsView() {
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold" style={{ fontFamily: 'Syne' }}>Gestión de Agentes</h2>
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text2)]" />
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 md:mb-6 gap-3">
+        <h2 className="text-xl md:text-2xl font-bold" style={{ fontFamily: 'Syne' }}>Gestión de Agentes</h2>
+        <div className="flex items-center gap-2 md:gap-4">
+          <div className="relative flex-1 md:flex-none">
+            <Search className="w-4 h-4 md:w-5 md:h-5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text2)]" />
             <input
               type="text"
-              placeholder="Buscar agente..."
-              className="pl-10 pr-4 py-2 bg-[var(--bg3)] border border-[var(--gray)] rounded-lg focus:border-orange-500 outline-none"
+              placeholder="Buscar..."
+              className="w-full md:w-auto pl-9 md:pl-10 pr-4 py-2 bg-[var(--bg3)] border border-[var(--gray)] rounded-lg focus:border-orange-500 outline-none text-sm"
             />
           </div>
-          <button className="btn-primary">+ Nuevo Agente</button>
+          <button className="btn-primary text-sm whitespace-nowrap">+ Nuevo</button>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
         {MOCK_AGENTS.map((agent) => (
           <AgentCard
             key={agent.id}
@@ -478,7 +503,7 @@ function TasksView() {
 // Main Page
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const renderView = () => {
     switch (activeTab) {
@@ -493,8 +518,8 @@ export default function Dashboard() {
           <div className="flex items-center justify-center h-[60vh]">
             <div className="text-center">
               <div className="text-6xl mb-4">🚧</div>
-              <h2 className="text-2xl font-bold mb-2">En construcción</h2>
-              <p className="text-[var(--text2)]">Esta sección estará disponible pronto</p>
+              <h2 className="text-xl md:text-2xl font-bold mb-2">En construcción</h2>
+              <p className="text-sm md:text-base text-[var(--text2)]">Esta sección estará disponible pronto</p>
             </div>
           </div>
         );
@@ -503,21 +528,30 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[var(--bg)]">
-      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} collapsed={sidebarCollapsed} />
+      <Sidebar 
+        activeTab={activeTab} 
+        onTabChange={setActiveTab} 
+        collapsed={!sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
       
-      {/* Toggle Button */}
-      <button
-        onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-        className="fixed top-4 z-50 p-2 bg-[var(--bg2)] border border-[var(--gray)] rounded-lg hover:bg-[var(--bg3)] transition-colors"
-        style={{ left: sidebarCollapsed ? '5rem' : '16rem' }}
-      >
-        {sidebarCollapsed ? <Menu className="w-5 h-5" /> : <X className="w-5 h-5" />}
-      </button>
+      {/* Header móvil */}
+      <header className="md:hidden fixed top-0 left-0 right-0 h-14 bg-[var(--bg2)] border-b border-[var(--gray)] z-20 flex items-center px-4">
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="p-2 hover:bg-[var(--bg3)] rounded-lg"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+        <div className="flex items-center gap-2 ml-3">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-400 to-amber-600 flex items-center justify-center text-lg">
+            🐾
+          </div>
+          <span className="font-bold" style={{ fontFamily: 'Syne' }}>Agentes C2</span>
+        </div>
+      </header>
       
-      <main 
-        className="p-6 pt-16 transition-all duration-300"
-        style={{ marginLeft: sidebarCollapsed ? '5rem' : '16rem' }}
-      >
+      <main className="pt-16 md:pt-0 p-4 md:p-6 md:ml-64">
         {renderView()}
       </main>
     </div>
