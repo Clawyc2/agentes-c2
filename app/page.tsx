@@ -256,10 +256,10 @@ function AgentCard({ agent, onEdit, onDelete, onView, onChat }: {
       {/* Actions */}
       <div className="flex gap-2">
         <button onClick={() => onView(agent)} className="flex-1 btn-secondary text-xs py-2 flex items-center justify-center gap-1">
-          <Eye className="w-4 h-4" /> Ver
+          <Eye className="w-4 h-4" /> Info
         </button>
-        <button onClick={() => onChat(agent)} className="flex-1 btn-primary text-xs py-2 flex items-center justify-center gap-1">
-          💬 Chat
+        <button onClick={() => onChat(agent)} className="flex-1 btn-secondary text-xs py-2 flex items-center justify-center gap-1">
+          📋 Logs
         </button>
         <button onClick={() => onEdit(agent)} className="px-3 py-2 border border-[var(--gray)] rounded-lg hover:bg-[var(--bg3)] transition-colors">
           <Edit className="w-4 h-4" />

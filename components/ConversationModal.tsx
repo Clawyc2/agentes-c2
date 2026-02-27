@@ -129,7 +129,7 @@ export function ConversationModal({
               {specialtyIcons[agent.specialty] || '🤖'}
             </div>
             <div>
-              <h2 className="font-bold">{agent.name}</h2>
+              <h2 className="font-bold">📋 Historial - {agent.name}</h2>
               <p className="text-xs text-[var(--text2)]">{agent.model}</p>
             </div>
           </div>
@@ -146,9 +146,9 @@ export function ConversationModal({
             </div>
           ) : messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
-              <div className="text-4xl mb-3">💬</div>
-              <p className="text-[var(--text2)]">Sin conversaciones aún</p>
-              <p className="text-xs text-[var(--text2)] mt-1">Los mensajes aparecerán aquí</p>
+              <div className="text-4xl mb-3">📭</div>
+              <p className="text-[var(--text2)]">Sin actividad registrada</p>
+              <p className="text-xs text-[var(--text2)] mt-1">Las tareas delegadas aparecerán aquí</p>
             </div>
           ) : (
             messages.map((msg) => (
@@ -182,29 +182,11 @@ export function ConversationModal({
           )}
         </div>
 
-        {/* Input */}
-        <div className="p-4 border-t border-[var(--gray)]">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              placeholder="Escribe un mensaje..."
-              className="flex-1 px-4 py-2 bg-[var(--bg3)] border border-[var(--gray)] rounded-xl focus:border-orange-500 outline-none"
-              disabled={sending}
-            />
-            <button
-              onClick={handleSend}
-              disabled={sending || !input.trim()}
-              className="px-4 py-2 bg-orange-500 text-white rounded-xl hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            </button>
+        {/* Input - READ ONLY, no escribir */}
+        <div className="p-4 border-t border-[var(--gray)] bg-[var(--bg3)]/50">
+          <div className="text-center text-xs text-[var(--text2)]">
+            🔒 <span className="text-orange-400 font-medium">Solo lectura</span> - Las conversaciones se generan cuando Clawy delega tareas a los agentes
           </div>
-          <p className="text-xs text-[var(--text2)] mt-2 text-center">
-            💡 Los mensajes se guardan en Supabase
-          </p>
         </div>
       </motion.div>
     </motion.div>
