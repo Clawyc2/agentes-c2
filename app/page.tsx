@@ -8,6 +8,7 @@ import {
   AlertCircle, TrendingUp, Calendar, MessageSquare, Menu, X, Loader2
 } from 'lucide-react';
 import { getAgents, getTasks, getDashboardStats, deleteAgent } from '@/lib/supabase';
+import { EditAgentModal, ViewAgentModal } from '@/components/AgentModals';
 
 // Tipos
 type Agent = {
@@ -456,6 +457,10 @@ export default function Dashboard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [stats, setStats] = useState({ totalAgents: 0, activeAgents: 0, totalTasks: 0, completedTasks: 0 });
   const [loading, setLoading] = useState(true);
+  
+  // Estados para modales
+  const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
+  const [viewingAgent, setViewingAgent] = useState<Agent | null>(null);
 
   // Cargar datos de Supabase
   useEffect(() => {

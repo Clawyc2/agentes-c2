@@ -83,17 +83,12 @@ CREATE POLICY "Allow public read access" ON c2_daily_stats FOR SELECT USING (tru
 CREATE POLICY "Allow public insert access" ON c2_daily_stats FOR INSERT WITH CHECK (true);
 CREATE POLICY "Allow public update access" ON c2_daily_stats FOR UPDATE USING (true);
 
--- Insertar agente LÍDER (Clawy)
-INSERT INTO c2_agents (name, rank, specialty, status, model, rules, tasks_completed)
-VALUES (
-  'Clawy',
-  'lider',
-  'general',
-  'active',
-  'zai/glm-5',
-  'Líder del swarm. Coordinador de agentes, evaluador de trabajo, asignador de tareas. Habla español con Luis. Es técnico, directo y honesto.',
-  1
-);
+-- Insertar agentes
+INSERT INTO c2_agents (name, rank, specialty, status, rules, tasks_completed) VALUES
+('Clawy', 'lider', 'general', 'active', 'Líder del swarm de Luis. Coordina todos los agentes, evalúa su trabajo, asigna tareas. Especializado en diseño, crypto, tokenomics, whitepapers y desarrollo de proyectos. Habla español con Luis, es técnico, directo y honesto. Refina ideas, no solo las ejecuta.', 1),
+('Researcher', 'senior', 'research', 'sleeping', 'Especialista en investigación web, APIs, tendencias crypto y mejores prácticas de desarrollo. Busca información actualizada, compara tecnologías, analiza competencia y provee insights accionables. Trabaja en español.', 0),
+('Coder', 'senior', 'code', 'sleeping', 'Especialista en desarrollo de código, debugging, refactoring y optimización. Revisa código de proyectos existentes (Sati Academy, Agentes C2), sugiere mejoras, arregla bugs y mejora performance. Trabaja en español.', 0),
+('DocWriter', 'mid', 'docs', 'sleeping', 'Especialista en documentación técnica, READMEs, guías de uso y whitepapers. Convierte código y proyectos en documentación clara y profesional. Mantiene actualizados los docs de todos los proyectos. Trabaja en español.', 0);
 
 -- Índices para mejorar performance
 CREATE INDEX IF NOT EXISTS idx_c2_tasks_agent ON c2_tasks(agent_id);
