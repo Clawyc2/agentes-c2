@@ -208,3 +208,56 @@ export async function getDashboardStats() {
     pendingTasks: pendingTasks || 0,
   }
 }
+
+// ============ CONVERSATIONS ============
+
+export async function getConversations(agentId: string, limit = 100) {
+  const { data, error } = await supabase
+    .from('c2_conversations')
+    .select('*')
+    .eq('agent_id', agentId)
+    .order('created_at', { ascending: true })
+    .limit(limit)
+  
+  if (error) {
+    console.error('Error fetching conversations:', error)
+    return []
+  }
+  return data || []
+}
+
+export async function createConversation(conv: {
+  agent_id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  tokens_used?: number;
+}) {
+  const { data, error } = await supabase
+    .from('c2_conversations')
+    .insert({
+      ...conv,
+      tokens_used: conv.tokens_used || 0,
+    })
+    .select()
+    .single()
+  
+  if (error) {
+    console.error('Error creating conversation:', error)
+    return null
+  }
+  return data
+}
+
+export async function getAllConversations(limit = 50) {
+  const { data, error } = await supabase
+    .from('c2_conversations')
+    .select('*, c2_agents(name, specialty)')
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  
+  if (error) {
+    console.error('Error fetching all conversations:', error)
+    return []
+  }
+  return data || []
+}

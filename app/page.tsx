@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { getAgents, getTasks, getDashboardStats, deleteAgent } from '@/lib/supabase';
 import { EditAgentModal, ViewAgentModal } from '@/components/AgentModals';
+import { ConversationModal } from '@/components/ConversationModal';
 
 // Tipos
 type Agent = {
@@ -164,11 +165,12 @@ function HeaderStats({ stats }: { stats: { totalAgents: number; activeAgents: nu
 }
 
 // Componente de Card de Agente
-function AgentCard({ agent, onEdit, onDelete, onView }: { 
+function AgentCard({ agent, onEdit, onDelete, onView, onChat }: { 
   agent: Agent;
   onEdit: (agent: Agent) => void;
   onDelete: (agent: Agent) => void;
   onView: (agent: Agent) => void;
+  onChat: (agent: Agent) => void;
 }) {
   const rankIcons: Record<string, string> = {
     lider: '👑',
@@ -256,8 +258,11 @@ function AgentCard({ agent, onEdit, onDelete, onView }: {
         <button onClick={() => onView(agent)} className="flex-1 btn-secondary text-xs py-2 flex items-center justify-center gap-1">
           <Eye className="w-4 h-4" /> Ver
         </button>
-        <button onClick={() => onEdit(agent)} className="flex-1 btn-secondary text-xs py-2 flex items-center justify-center gap-1">
-          <Edit className="w-4 h-4" /> Editar
+        <button onClick={() => onChat(agent)} className="flex-1 btn-primary text-xs py-2 flex items-center justify-center gap-1">
+          💬 Chat
+        </button>
+        <button onClick={() => onEdit(agent)} className="px-3 py-2 border border-[var(--gray)] rounded-lg hover:bg-[var(--bg3)] transition-colors">
+          <Edit className="w-4 h-4" />
         </button>
         <button onClick={() => onDelete(agent)} className="px-3 py-2 border border-red-500/50 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors">
           <Trash2 className="w-4 h-4" />
@@ -312,13 +317,14 @@ function TaskItem({ task }: { task: Task }) {
 }
 
 // Dashboard Principal
-function DashboardView({ agents, tasks, stats, onEdit, onDelete, onView }: { 
+function DashboardView({ agents, tasks, stats, onEdit, onDelete, onView, onChat }: { 
   agents: Agent[]; 
   tasks: Task[];
   stats: { totalAgents: number; activeAgents: number; totalTasks: number; completedTasks: number };
   onEdit: (agent: Agent) => void;
   onDelete: (agent: Agent) => void;
   onView: (agent: Agent) => void;
+  onChat: (agent: Agent) => void;
 }) {
   if (agents.length === 0) {
     return (
@@ -349,6 +355,7 @@ function DashboardView({ agents, tasks, stats, onEdit, onDelete, onView }: {
               onEdit={onEdit}
               onDelete={onDelete}
               onView={onView}
+              onChat={onChat}
             />
           ))}
         </div>
@@ -373,11 +380,12 @@ function DashboardView({ agents, tasks, stats, onEdit, onDelete, onView }: {
 }
 
 // Vista de Agentes
-function AgentsView({ agents, onEdit, onDelete, onView }: { 
+function AgentsView({ agents, onEdit, onDelete, onView, onChat }: { 
   agents: Agent[];
   onEdit: (agent: Agent) => void;
   onDelete: (agent: Agent) => void;
   onView: (agent: Agent) => void;
+  onChat: (agent: Agent) => void;
 }) {
   return (
     <div>
@@ -410,6 +418,7 @@ function AgentsView({ agents, onEdit, onDelete, onView }: {
               onEdit={onEdit}
               onDelete={onDelete}
               onView={onView}
+              onChat={onChat}
             />
           ))}
         </div>
@@ -459,6 +468,7 @@ export default function Dashboard() {
   // Estados para modales
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
   const [viewingAgent, setViewingAgent] = useState<Agent | null>(null);
+  const [chattingAgent, setChattingAgent] = useState<Agent | null>(null);
 
   // Cargar datos de Supabase
   useEffect(() => {
@@ -490,6 +500,10 @@ export default function Dashboard() {
 
   const handleViewAgent = (agent: Agent) => {
     setViewingAgent(agent);
+  };
+
+  const handleChatAgent = (agent: Agent) => {
+    setChattingAgent(agent);
   };
 
   const handleDeleteAgent = async (agent: Agent) => {
@@ -526,6 +540,7 @@ export default function Dashboard() {
             onEdit={handleEditAgent}
             onDelete={handleDeleteAgent}
             onView={handleViewAgent}
+            onChat={handleChatAgent}
           />
         );
       case 'agents':
@@ -535,6 +550,7 @@ export default function Dashboard() {
             onEdit={handleEditAgent}
             onDelete={handleDeleteAgent}
             onView={handleViewAgent}
+            onChat={handleChatAgent}
           />
         );
       case 'tasks':
@@ -593,6 +609,12 @@ export default function Dashboard() {
         agent={viewingAgent}
         isOpen={!!viewingAgent}
         onClose={() => setViewingAgent(null)}
+      />
+      
+      <ConversationModal
+        agent={chattingAgent}
+        isOpen={!!chattingAgent}
+        onClose={() => setChattingAgent(null)}
       />
     </div>
   );
