@@ -166,9 +166,9 @@ function HeaderStats({ stats }: { stats: { totalAgents: number; activeAgents: nu
 // Componente de Card de Agente
 function AgentCard({ agent, onEdit, onDelete, onView }: { 
   agent: Agent;
-  onEdit: () => void;
-  onDelete: () => void;
-  onView: () => void;
+  onEdit: (agent: Agent) => void;
+  onDelete: (agent: Agent) => void;
+  onView: (agent: Agent) => void;
 }) {
   const rankIcons: Record<string, string> = {
     lider: '👑',
@@ -253,13 +253,13 @@ function AgentCard({ agent, onEdit, onDelete, onView }: {
 
       {/* Actions */}
       <div className="flex gap-2">
-        <button onClick={onView} className="flex-1 btn-secondary text-xs py-2 flex items-center justify-center gap-1">
+        <button onClick={() => onView(agent)} className="flex-1 btn-secondary text-xs py-2 flex items-center justify-center gap-1">
           <Eye className="w-4 h-4" /> Ver
         </button>
-        <button onClick={onEdit} className="flex-1 btn-secondary text-xs py-2 flex items-center justify-center gap-1">
+        <button onClick={() => onEdit(agent)} className="flex-1 btn-secondary text-xs py-2 flex items-center justify-center gap-1">
           <Edit className="w-4 h-4" /> Editar
         </button>
-        <button onClick={onDelete} className="px-3 py-2 border border-red-500/50 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors">
+        <button onClick={() => onDelete(agent)} className="px-3 py-2 border border-red-500/50 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors">
           <Trash2 className="w-4 h-4" />
         </button>
       </div>
@@ -312,10 +312,13 @@ function TaskItem({ task }: { task: Task }) {
 }
 
 // Dashboard Principal
-function DashboardView({ agents, tasks, stats }: { 
+function DashboardView({ agents, tasks, stats, onEdit, onDelete, onView }: { 
   agents: Agent[]; 
   tasks: Task[];
   stats: { totalAgents: number; activeAgents: number; totalTasks: number; completedTasks: number };
+  onEdit: (agent: Agent) => void;
+  onDelete: (agent: Agent) => void;
+  onView: (agent: Agent) => void;
 }) {
   if (agents.length === 0) {
     return (
@@ -343,14 +346,9 @@ function DashboardView({ agents, tasks, stats }: {
             <AgentCard
               key={agent.id}
               agent={agent}
-              onEdit={() => console.log('Edit:', agent.id)}
-              onDelete={async () => {
-                if (confirm('¿Eliminar este agente?')) {
-                  await deleteAgent(agent.id);
-                  window.location.reload();
-                }
-              }}
-              onView={() => console.log('View:', agent.id)}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onView={onView}
             />
           ))}
         </div>
@@ -375,7 +373,12 @@ function DashboardView({ agents, tasks, stats }: {
 }
 
 // Vista de Agentes
-function AgentsView({ agents }: { agents: Agent[] }) {
+function AgentsView({ agents, onEdit, onDelete, onView }: { 
+  agents: Agent[];
+  onEdit: (agent: Agent) => void;
+  onDelete: (agent: Agent) => void;
+  onView: (agent: Agent) => void;
+}) {
   return (
     <div>
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 md:mb-6 gap-3">
@@ -404,14 +407,9 @@ function AgentsView({ agents }: { agents: Agent[] }) {
             <AgentCard
               key={agent.id}
               agent={agent}
-              onEdit={() => console.log('Edit:', agent.id)}
-              onDelete={async () => {
-                if (confirm('¿Eliminar este agente?')) {
-                  await deleteAgent(agent.id);
-                  window.location.reload();
-                }
-              }}
-              onView={() => console.log('View:', agent.id)}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onView={onView}
             />
           ))}
         </div>
@@ -485,6 +483,27 @@ export default function Dashboard() {
     loadData();
   }, []);
 
+  // Handlers para acciones de agentes
+  const handleEditAgent = (agent: Agent) => {
+    setEditingAgent(agent);
+  };
+
+  const handleViewAgent = (agent: Agent) => {
+    setViewingAgent(agent);
+  };
+
+  const handleDeleteAgent = async (agent: Agent) => {
+    if (confirm(`¿Eliminar a ${agent.name}?`)) {
+      await deleteAgent(agent.id);
+      window.location.reload();
+    }
+  };
+
+  const handleSaveAgent = () => {
+    setEditingAgent(null);
+    window.location.reload();
+  };
+
   const renderView = () => {
     if (loading) {
       return (
@@ -499,9 +518,25 @@ export default function Dashboard() {
 
     switch (activeTab) {
       case 'dashboard':
-        return <DashboardView agents={agents} tasks={tasks} stats={stats} />;
+        return (
+          <DashboardView 
+            agents={agents} 
+            tasks={tasks} 
+            stats={stats}
+            onEdit={handleEditAgent}
+            onDelete={handleDeleteAgent}
+            onView={handleViewAgent}
+          />
+        );
       case 'agents':
-        return <AgentsView agents={agents} />;
+        return (
+          <AgentsView 
+            agents={agents}
+            onEdit={handleEditAgent}
+            onDelete={handleDeleteAgent}
+            onView={handleViewAgent}
+          />
+        );
       case 'tasks':
         return <TasksView tasks={tasks} />;
       default:
@@ -545,6 +580,20 @@ export default function Dashboard() {
       <main className="pt-16 md:pt-0 p-4 md:p-6 md:ml-64">
         {renderView()}
       </main>
+
+      {/* Modales */}
+      <EditAgentModal
+        agent={editingAgent}
+        isOpen={!!editingAgent}
+        onClose={() => setEditingAgent(null)}
+        onSave={handleSaveAgent}
+      />
+      
+      <ViewAgentModal
+        agent={viewingAgent}
+        isOpen={!!viewingAgent}
+        onClose={() => setViewingAgent(null)}
+      />
     </div>
   );
 }

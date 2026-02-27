@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Save, Loader2 } from 'lucide-react';
 import { updateAgent } from '@/lib/supabase';
@@ -32,17 +32,17 @@ export function EditAgentModal({
   onSave: () => void;
 }) {
   const [formData, setFormData] = useState({
-    name: agent?.name || '',
-    rank: agent?.rank || 'mid',
-    specialty: agent?.specialty || 'general',
-    status: agent?.status || 'sleeping',
-    model: agent?.model || 'zai/glm-5',
-    rules: agent?.rules || '',
+    name: '',
+    rank: 'mid',
+    specialty: 'general',
+    status: 'sleeping',
+    model: 'zai/glm-5',
+    rules: '',
   });
   const [saving, setSaving] = useState(false);
 
   // Actualizar formData cuando cambia agent
-  useState(() => {
+  useEffect(() => {
     if (agent) {
       setFormData({
         name: agent.name,
@@ -53,7 +53,7 @@ export function EditAgentModal({
         rules: agent.rules,
       });
     }
-  });
+  }, [agent]);
 
   const handleSave = async () => {
     if (!agent) return;
