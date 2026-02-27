@@ -5,7 +5,8 @@ import { motion } from 'framer-motion';
 import { 
   Users, Activity, Zap, Clock, CheckCircle, XCircle,
   Settings, Trash2, Edit, Eye, ChevronRight, Search,
-  AlertCircle, TrendingUp, Calendar, MessageSquare, Menu, X, Loader2
+  AlertCircle, TrendingUp, Calendar, MessageSquare, Menu, X, Loader2,
+  Calculator, FileSpreadsheet
 } from 'lucide-react';
 import { getAgents, getTasks, getDashboardStats, deleteAgent } from '@/lib/supabase';
 import { EditAgentModal, ViewAgentModal } from '@/components/AgentModals';
@@ -51,6 +52,8 @@ function Sidebar({ activeTab, onTabChange, collapsed, onClose }: {
     { id: 'tasks', icon: CheckCircle, label: 'Tareas' },
     { id: 'conversations', icon: MessageSquare, label: 'Conversaciones' },
     { id: 'stats', icon: TrendingUp, label: 'Estadísticas' },
+    { id: 'divider', icon: null, label: '───' },
+    { id: 'contable', icon: Calculator, label: 'Despacho Contable' },
   ];
 
   return (
@@ -91,26 +94,35 @@ function Sidebar({ activeTab, onTabChange, collapsed, onClose }: {
 
         {/* Navigation */}
         <nav className="flex-1 py-2 md:py-4 overflow-y-auto">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => {
-                onTabChange(tab.id);
-                onClose();
-              }}
-              className={`w-full flex items-center gap-3 px-4 md:px-6 py-3 transition-all ${
-                activeTab === tab.id
-                  ? 'bg-orange-500/10 border-l-4 border-orange-500 text-orange-400'
-                  : 'text-[var(--text)] hover:bg-[var(--bg3)]'
-              } ${collapsed ? 'md:justify-center' : ''}`}
-              title={collapsed ? tab.label : undefined}
-            >
-              <tab.icon className="w-5 h-5 shrink-0" />
-              {(!collapsed || typeof window !== 'undefined' && window.innerWidth >= 768) && (
-                <span className="font-medium text-sm md:text-base">{tab.label}</span>
-              )}
-            </button>
-          ))}
+          {tabs.map((tab) => {
+            if (tab.id === 'divider') {
+              return (
+                <div key={tab.id} className="px-4 py-2">
+                  <div className="border-t border-[var(--gray)]" />
+                </div>
+              );
+            }
+            return (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  onTabChange(tab.id);
+                  onClose();
+                }}
+                className={`w-full flex items-center gap-3 px-4 md:px-6 py-3 transition-all ${
+                  activeTab === tab.id
+                    ? 'bg-orange-500/10 border-l-4 border-orange-500 text-orange-400'
+                    : 'text-[var(--text)] hover:bg-[var(--bg3)]'
+                } ${collapsed ? 'md:justify-center' : ''}`}
+                title={collapsed ? tab.label : undefined}
+              >
+                <tab.icon className="w-5 h-5 shrink-0" />
+                {(!collapsed || typeof window !== 'undefined' && window.innerWidth >= 768) && (
+                  <span className="font-medium text-sm md:text-base">{tab.label}</span>
+                )}
+              </button>
+            );
+          })}
         </nav>
 
         {/* Footer */}
@@ -456,6 +468,69 @@ function TasksView({ tasks }: { tasks: Task[] }) {
   );
 }
 
+// Vista Despacho Contable (NUEVO)
+function ContableView() {
+  return (
+    <div>
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-3">
+        <div>
+          <h2 className="text-xl md:text-2xl font-bold flex items-center gap-2" style={{ fontFamily: 'Syne' }}>
+            <Calculator className="w-6 h-6 text-green-400" />
+            Despacho Contable
+          </h2>
+          <p className="text-sm text-[var(--text2)] mt-1">Automatización contable con agentes especializados</p>
+        </div>
+      </div>
+
+      {/* Estado vacío por ahora */}
+      <div className="flex flex-col items-center justify-center py-20">
+        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center text-5xl mb-6">
+          🧮
+        </div>
+        <h3 className="text-xl font-bold mb-2">Sección en construcción</h3>
+        <p className="text-[var(--text2)] text-center max-w-md mb-6">
+          Aquí vivirán los agentes especializados en contabilidad:<br />
+          Facturador, Cobrador, Conciliador, Alertador y Registrador.
+        </p>
+        
+        {/* Preview de lo que vendrá */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-2xl mt-6">
+          <div className="card p-4 text-center border-dashed border-2 border-[var(--gray)]">
+            <div className="text-3xl mb-2">📥</div>
+            <p className="font-semibold">Facturador</p>
+            <p className="text-xs text-[var(--text2)]">Proveedores</p>
+          </div>
+          <div className="card p-4 text-center border-dashed border-2 border-[var(--gray)]">
+            <div className="text-3xl mb-2">📤</div>
+            <p className="font-semibold">Cobrador</p>
+            <p className="text-xs text-[var(--text2)]">Clientes</p>
+          </div>
+          <div className="card p-4 text-center border-dashed border-2 border-[var(--gray)]">
+            <div className="text-3xl mb-2">🏦</div>
+            <p className="font-semibold">Conciliador</p>
+            <p className="text-xs text-[var(--text2)]">Bancos</p>
+          </div>
+          <div className="card p-4 text-center border-dashed border-2 border-[var(--gray)]">
+            <div className="text-3xl mb-2">⚠️</div>
+            <p className="font-semibold">Alertador</p>
+            <p className="text-xs text-[var(--text2)]">Anomalías</p>
+          </div>
+          <div className="card p-4 text-center border-dashed border-2 border-[var(--gray)]">
+            <div className="text-3xl mb-2">📋</div>
+            <p className="font-semibold">Registrador</p>
+            <p className="text-xs text-[var(--text2)]">Supabase</p>
+          </div>
+          <div className="card p-4 text-center border-dashed border-2 border-[var(--gray)]">
+            <div className="text-3xl mb-2">👑</div>
+            <p className="font-semibold">Clawy</p>
+            <p className="text-xs text-[var(--text2)]">Orquestador</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Main Page
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -555,6 +630,8 @@ export default function Dashboard() {
         );
       case 'tasks':
         return <TasksView tasks={tasks} />;
+      case 'contable':
+        return <ContableView />;
       default:
         return (
           <div className="flex items-center justify-center h-[60vh]">
