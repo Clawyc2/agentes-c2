@@ -1,130 +1,40 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Users, Activity, Zap, Clock, CheckCircle, XCircle,
   Settings, Trash2, Edit, Eye, ChevronRight, Search,
-  AlertCircle, TrendingUp, Calendar, MessageSquare, Menu, X
+  AlertCircle, TrendingUp, Calendar, MessageSquare, Menu, X, Loader2
 } from 'lucide-react';
+import { getAgents, getTasks, getDashboardStats, deleteAgent } from '@/lib/supabase';
 
-// Datos mock para demo
-const MOCK_AGENTS = [
-  {
-    id: '1',
-    name: 'Clawy',
-    rank: 'lider' as const,
-    specialty: 'general' as const,
-    status: 'active' as const,
-    model: 'zai/glm-5',
-    rules: 'Líder del swarm. Coordina agentes, evalúa trabajo, asigna tareas.',
-    tasks_completed: 47,
-    tasks_failed: 2,
-    total_tokens: 125430,
-    last_active: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    name: 'Researcher',
-    rank: 'senior' as const,
-    specialty: 'research' as const,
-    status: 'working' as const,
-    model: 'zai/glm-5',
-    rules: 'Especialista en investigación web, APIs y tendencias crypto.',
-    tasks_completed: 23,
-    tasks_failed: 1,
-    total_tokens: 89250,
-    last_active: new Date().toISOString(),
-  },
-  {
-    id: '3',
-    name: 'Designer',
-    rank: 'mid' as const,
-    specialty: 'design' as const,
-    status: 'sleeping' as const,
-    model: 'zai/glm-5',
-    rules: 'Diseño UI/UX, branding y assets visuales.',
-    tasks_completed: 15,
-    tasks_failed: 0,
-    total_tokens: 67840,
-    last_active: new Date(Date.now() - 3600000).toISOString(),
-  },
-  {
-    id: '4',
-    name: 'Coder',
-    rank: 'senior' as const,
-    specialty: 'code' as const,
-    status: 'active' as const,
-    model: 'zai/glm-5',
-    rules: 'Desarrollo de código, debugging y refactoring.',
-    tasks_completed: 38,
-    tasks_failed: 3,
-    total_tokens: 98320,
-    last_active: new Date().toISOString(),
-  },
-  {
-    id: '5',
-    name: 'DocWriter',
-    rank: 'junior' as const,
-    specialty: 'docs' as const,
-    status: 'sleeping' as const,
-    model: 'zai/glm-5',
-    rules: 'Documentación técnica y whitepapers.',
-    tasks_completed: 12,
-    tasks_failed: 1,
-    total_tokens: 45210,
-    last_active: new Date(Date.now() - 7200000).toISOString(),
-  },
-];
+// Tipos
+type Agent = {
+  id: string;
+  name: string;
+  rank: string;
+  specialty: string;
+  status: string;
+  model: string;
+  rules: string;
+  tasks_completed: number;
+  tasks_failed: number;
+  total_tokens: number;
+  last_active: string;
+};
 
-const MOCK_TASKS = [
-  {
-    id: '1',
-    agent_id: '2',
-    agent_name: 'Researcher',
-    title: 'Investigar oráculos DeFi más confiables',
-    status: 'in_progress' as const,
-    priority: 'high' as const,
-    project: 'Sati Academy',
-    tokens_used: 1250,
-    created_at: new Date(Date.now() - 1800000).toISOString(),
-  },
-  {
-    id: '2',
-    agent_id: '4',
-    agent_name: 'Coder',
-    title: 'Mejorar performance del timeline',
-    status: 'completed' as const,
-    priority: 'medium' as const,
-    project: 'Sati Academy',
-    tokens_used: 890,
-    created_at: new Date(Date.now() - 3600000).toISOString(),
-    completed_at: new Date(Date.now() - 1800000).toISOString(),
-  },
-  {
-    id: '3',
-    agent_id: '3',
-    agent_name: 'Designer',
-    title: 'Diseñar dashboard de métricas',
-    status: 'pending' as const,
-    priority: 'medium' as const,
-    project: 'Agentes C2',
-    tokens_used: 0,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: '4',
-    agent_id: '2',
-    agent_name: 'Researcher',
-    title: 'Analizar competencia de apps Bitcoin',
-    status: 'completed' as const,
-    priority: 'low' as const,
-    project: 'Sati Academy',
-    tokens_used: 2100,
-    created_at: new Date(Date.now() - 7200000).toISOString(),
-    completed_at: new Date(Date.now() - 5400000).toISOString(),
-  },
-];
+type Task = {
+  id: string;
+  agent_id: string;
+  title: string;
+  description: string;
+  status: string;
+  priority: string;
+  project: string;
+  tokens_used: number;
+  created_at: string;
+};
 
 // Componente de Sidebar
 function Sidebar({ activeTab, onTabChange, collapsed, onClose }: { 
@@ -168,7 +78,6 @@ function Sidebar({ activeTab, onTabChange, collapsed, onClose }: {
                 </div>
               )}
             </div>
-            {/* Close button para móvil */}
             <button 
               onClick={onClose}
               className="md:hidden p-2 hover:bg-[var(--bg3)] rounded-lg"
@@ -185,7 +94,7 @@ function Sidebar({ activeTab, onTabChange, collapsed, onClose }: {
               key={tab.id}
               onClick={() => {
                 onTabChange(tab.id);
-                onClose(); // Cierra en móvil
+                onClose();
               }}
               className={`w-full flex items-center gap-3 px-4 md:px-6 py-3 transition-all ${
                 activeTab === tab.id
@@ -222,17 +131,17 @@ function Sidebar({ activeTab, onTabChange, collapsed, onClose }: {
 }
 
 // Componente de Header Stats
-function HeaderStats() {
-  const stats = [
-    { label: 'Agentes', value: '3', icon: Users, color: 'text-green-400' },
-    { label: 'Tareas', value: '12', icon: CheckCircle, color: 'text-orange-400' },
-    { label: 'Tokens', value: '125K', icon: Zap, color: 'text-purple-400' },
-    { label: 'Éxito', value: '94%', icon: TrendingUp, color: 'text-cyan-400' },
+function HeaderStats({ stats }: { stats: { totalAgents: number; activeAgents: number; totalTasks: number; completedTasks: number } }) {
+  const statItems = [
+    { label: 'Agentes', value: stats.activeAgents || 0, icon: Users, color: 'text-green-400' },
+    { label: 'Tareas', value: stats.totalTasks || 0, icon: CheckCircle, color: 'text-orange-400' },
+    { label: 'Completadas', value: stats.completedTasks || 0, icon: Zap, color: 'text-purple-400' },
+    { label: 'Total Agentes', value: stats.totalAgents || 0, icon: TrendingUp, color: 'text-cyan-400' },
   ];
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-4 md:mb-6">
-      {stats.map((stat, i) => (
+      {statItems.map((stat, i) => (
         <motion.div
           key={i}
           initial={{ opacity: 0, y: 20 }}
@@ -255,12 +164,12 @@ function HeaderStats() {
 
 // Componente de Card de Agente
 function AgentCard({ agent, onEdit, onDelete, onView }: { 
-  agent: typeof MOCK_AGENTS[0];
+  agent: Agent;
   onEdit: () => void;
   onDelete: () => void;
   onView: () => void;
 }) {
-  const rankIcons = {
+  const rankIcons: Record<string, string> = {
     lider: '👑',
     senior: '⭐⭐⭐',
     mid: '⭐⭐',
@@ -268,21 +177,21 @@ function AgentCard({ agent, onEdit, onDelete, onView }: {
     especialista: '🔷',
   };
 
-  const statusColors = {
+  const statusColors: Record<string, string> = {
     active: 'bg-green-500',
     working: 'bg-orange-500 animate-pulse',
     sleeping: 'bg-gray-500',
     error: 'bg-red-500',
   };
 
-  const statusLabels = {
+  const statusLabels: Record<string, string> = {
     active: 'Activo',
     working: 'Trabajando',
     sleeping: 'Durmiendo',
     error: 'Error',
   };
 
-  const specialtyIcons = {
+  const specialtyIcons: Record<string, string> = {
     research: '🔍',
     design: '🎨',
     code: '💻',
@@ -303,12 +212,12 @@ function AgentCard({ agent, onEdit, onDelete, onView }: {
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-amber-600 flex items-center justify-center text-2xl relative">
-            {specialtyIcons[agent.specialty]}
+            {specialtyIcons[agent.specialty] || '🤖'}
             <span className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full ${statusColors[agent.status]} border-2 border-[var(--bg2)]`} />
           </div>
           <div>
             <h3 className="font-bold text-lg">{agent.name}</h3>
-            <p className="text-sm text-[var(--text2)]">{rankIcons[agent.rank]} {agent.rank}</p>
+            <p className="text-sm text-[var(--text2)]">{rankIcons[agent.rank] || '⭐'} {agent.rank}</p>
           </div>
         </div>
         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -316,7 +225,7 @@ function AgentCard({ agent, onEdit, onDelete, onView }: {
           agent.status === 'working' ? 'bg-orange-500/20 text-orange-400' :
           'bg-gray-500/20 text-gray-400'
         }`}>
-          {statusLabels[agent.status]}
+          {statusLabels[agent.status] || agent.status}
         </span>
       </div>
 
@@ -358,15 +267,15 @@ function AgentCard({ agent, onEdit, onDelete, onView }: {
 }
 
 // Componente de Tarea
-function TaskItem({ task }: { task: typeof MOCK_TASKS[0] }) {
-  const statusIcons = {
+function TaskItem({ task }: { task: Task }) {
+  const statusIcons: Record<string, React.ReactNode> = {
     pending: <Clock className="w-4 h-4 text-gray-400" />,
     in_progress: <Activity className="w-4 h-4 text-orange-400 animate-pulse" />,
     completed: <CheckCircle className="w-4 h-4 text-green-400" />,
     failed: <XCircle className="w-4 h-4 text-red-400" />,
   };
 
-  const priorityColors = {
+  const priorityColors: Record<string, string> = {
     low: 'border-l-gray-400',
     medium: 'border-l-orange-400',
     high: 'border-l-red-400',
@@ -382,7 +291,7 @@ function TaskItem({ task }: { task: typeof MOCK_TASKS[0] }) {
   };
 
   return (
-    <div className={`p-4 bg-[var(--bg2)] rounded-lg border-l-4 ${priorityColors[task.priority]} hover:bg-[var(--bg3)] transition-colors cursor-pointer`}>
+    <div className={`p-4 bg-[var(--bg2)] rounded-lg border-l-4 ${priorityColors[task.priority] || 'border-l-gray-400'} hover:bg-[var(--bg3)] transition-colors cursor-pointer`}>
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
@@ -390,7 +299,6 @@ function TaskItem({ task }: { task: typeof MOCK_TASKS[0] }) {
             <span className="font-semibold text-sm">{task.title}</span>
           </div>
           <div className="flex items-center gap-4 text-xs text-[var(--text2)]">
-            <span>🤖 {task.agent_name}</span>
             {task.project && <span>📁 {task.project}</span>}
             <span>🕐 {timeAgo(task.created_at)}</span>
             {task.tokens_used > 0 && <span>⚡ {task.tokens_used} tokens</span>}
@@ -403,10 +311,25 @@ function TaskItem({ task }: { task: typeof MOCK_TASKS[0] }) {
 }
 
 // Dashboard Principal
-function DashboardView() {
+function DashboardView({ agents, tasks, stats }: { 
+  agents: Agent[]; 
+  tasks: Task[];
+  stats: { totalAgents: number; activeAgents: number; totalTasks: number; completedTasks: number };
+}) {
+  if (agents.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4 text-orange-400" />
+          <p className="text-[var(--text2)]">Cargando datos...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
-      <HeaderStats />
+      <HeaderStats stats={stats} />
       
       {/* Agentes */}
       <div className="mb-6 md:mb-8">
@@ -415,12 +338,17 @@ function DashboardView() {
           Agentes Activos
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-          {MOCK_AGENTS.map((agent) => (
+          {agents.map((agent) => (
             <AgentCard
               key={agent.id}
               agent={agent}
               onEdit={() => console.log('Edit:', agent.id)}
-              onDelete={() => console.log('Delete:', agent.id)}
+              onDelete={async () => {
+                if (confirm('¿Eliminar este agente?')) {
+                  await deleteAgent(agent.id);
+                  window.location.reload();
+                }
+              }}
               onView={() => console.log('View:', agent.id)}
             />
           ))}
@@ -428,23 +356,25 @@ function DashboardView() {
       </div>
 
       {/* Tareas Recientes */}
-      <div>
-        <h2 className="text-lg md:text-xl font-bold mb-3 md:mb-4 flex items-center gap-2" style={{ fontFamily: 'Syne' }}>
-          <Activity className="w-4 h-4 md:w-5 md:h-5 text-orange-400" />
-          Tareas Recientes
-        </h2>
-        <div className="space-y-2">
-          {MOCK_TASKS.map((task) => (
-            <TaskItem key={task.id} task={task} />
-          ))}
+      {tasks.length > 0 && (
+        <div>
+          <h2 className="text-lg md:text-xl font-bold mb-3 md:mb-4 flex items-center gap-2" style={{ fontFamily: 'Syne' }}>
+            <Activity className="w-4 h-4 md:w-5 md:h-5 text-orange-400" />
+            Tareas Recientes
+          </h2>
+          <div className="space-y-2">
+            {tasks.slice(0, 5).map((task) => (
+              <TaskItem key={task.id} task={task} />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
 
 // Vista de Agentes
-function AgentsView() {
+function AgentsView({ agents }: { agents: Agent[] }) {
   return (
     <div>
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 md:mb-6 gap-3">
@@ -462,40 +392,58 @@ function AgentsView() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-        {MOCK_AGENTS.map((agent) => (
-          <AgentCard
-            key={agent.id}
-            agent={agent}
-            onEdit={() => console.log('Edit:', agent.id)}
-            onDelete={() => console.log('Delete:', agent.id)}
-            onView={() => console.log('View:', agent.id)}
-          />
-        ))}
-      </div>
+      {agents.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">🤖</div>
+          <p className="text-[var(--text2)]">No hay agentes aún</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+          {agents.map((agent) => (
+            <AgentCard
+              key={agent.id}
+              agent={agent}
+              onEdit={() => console.log('Edit:', agent.id)}
+              onDelete={async () => {
+                if (confirm('¿Eliminar este agente?')) {
+                  await deleteAgent(agent.id);
+                  window.location.reload();
+                }
+              }}
+              onView={() => console.log('View:', agent.id)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
 // Vista de Tareas
-function TasksView() {
+function TasksView({ tasks }: { tasks: Task[] }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold" style={{ fontFamily: 'Syne' }}>Tareas</h2>
+        <h2 className="text-xl md:text-2xl font-bold" style={{ fontFamily: 'Syne' }}>Tareas</h2>
         <div className="flex items-center gap-2">
-          <button className="btn-secondary">Todas</button>
-          <button className="btn-secondary">Pendientes</button>
-          <button className="btn-secondary">En Progreso</button>
-          <button className="btn-secondary">Completadas</button>
+          <button className="btn-secondary text-xs md:text-sm">Todas</button>
+          <button className="btn-secondary text-xs md:text-sm">Pendientes</button>
+          <button className="btn-secondary text-xs md:text-sm">Completadas</button>
         </div>
       </div>
 
-      <div className="space-y-2">
-        {[...MOCK_TASKS, ...MOCK_TASKS].map((task, i) => (
-          <TaskItem key={`${task.id}-${i}`} task={task} />
-        ))}
-      </div>
+      {tasks.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">📋</div>
+          <p className="text-[var(--text2)]">No hay tareas aún</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {tasks.map((task) => (
+            <TaskItem key={task.id} task={task} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -504,15 +452,53 @@ function TasksView() {
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [stats, setStats] = useState({ totalAgents: 0, activeAgents: 0, totalTasks: 0, completedTasks: 0 });
+  const [loading, setLoading] = useState(true);
+
+  // Cargar datos de Supabase
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [agentsData, tasksData, statsData] = await Promise.all([
+          getAgents(),
+          getTasks(),
+          getDashboardStats(),
+        ]);
+        
+        setAgents(agentsData);
+        setTasks(tasksData);
+        setStats(statsData);
+      } catch (error) {
+        console.error('Error loading data:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    loadData();
+  }, []);
 
   const renderView = () => {
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="text-center">
+            <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4 text-orange-400" />
+            <p className="text-[var(--text2)]">Conectando con Supabase...</p>
+          </div>
+        </div>
+      );
+    }
+
     switch (activeTab) {
       case 'dashboard':
-        return <DashboardView />;
+        return <DashboardView agents={agents} tasks={tasks} stats={stats} />;
       case 'agents':
-        return <AgentsView />;
+        return <AgentsView agents={agents} />;
       case 'tasks':
-        return <TasksView />;
+        return <TasksView tasks={tasks} />;
       default:
         return (
           <div className="flex items-center justify-center h-[60vh]">
