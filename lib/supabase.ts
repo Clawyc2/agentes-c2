@@ -195,10 +195,11 @@ export async function getDashboardStats() {
     .from('c2_agents')
     .select('*', { count: 'exact', head: true })
   
+  // Contar agentes activos Y trabajando
   const { count: activeAgents } = await supabase
     .from('c2_agents')
     .select('*', { count: 'exact', head: true })
-    .eq('status', 'active')
+    .in('status', ['active', 'working'])
   
   // Get tasks count
   const { count: totalTasks } = await supabase
