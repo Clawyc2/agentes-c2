@@ -221,6 +221,7 @@ function AgentCard({ agent, onEdit, onDelete, onView, onChat }: {
     analysis: '📊',
     botmaker: '🤖',
     testing: '🧪',
+    security: '🔒',
     general: '🤖',
   };
 

@@ -141,6 +141,7 @@ export function EditAgentModal({
                 <option value="analysis">📊 Analysis</option>
                 <option value="botmaker">🤖 BotMaker</option>
                 <option value="testing">🧪 Testing</option>
+                <option value="security">🔒 Security</option>
               </select>
             </div>
 
@@ -172,12 +173,37 @@ export function EditAgentModal({
 
             {/* Reglas */}
             <div>
-              <label className="block text-sm text-[var(--text2)] mb-1">Reglas / Comportamiento</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm text-[var(--text2)]">Reglas / Comportamiento</label>
+                <label className="cursor-pointer px-3 py-1 text-xs bg-[var(--bg3)] hover:bg-[var(--bg)] border border-[var(--gray)] rounded-lg transition-colors flex items-center gap-1">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                  Subir .MD
+                  <input
+                    type="file"
+                    accept=".md,.markdown"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                          const content = event.target?.result as string;
+                          setFormData({ ...formData, rules: content });
+                        };
+                        reader.readAsText(file);
+                      }
+                    }}
+                  />
+                </label>
+              </div>
               <textarea
                 value={formData.rules}
                 onChange={(e) => setFormData({ ...formData, rules: e.target.value })}
-                rows={4}
-                className="w-full px-4 py-2 bg-[var(--bg3)] border border-[var(--gray)] rounded-lg focus:border-orange-500 outline-none resize-none"
+                rows={8}
+                className="w-full px-4 py-2 bg-[var(--bg3)] border border-[var(--gray)] rounded-lg focus:border-orange-500 outline-none resize-none font-mono text-xs"
+                placeholder="Pega aquí las reglas del agente o sube un archivo .MD..."
               />
             </div>
           </div>
