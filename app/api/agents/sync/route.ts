@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error('Missing Supabase environment variables');
+}
+
+// Dynamic import to avoid build issues
+const getSupabase = async () => {
+  const { createClient } = await import('@supabase/supabase-js');
+  return createClient(supabaseUrl, supabaseKey);
+};
 
 /**
  * POST /api/agents/sync
@@ -18,6 +25,7 @@ const supabase = createClient(
  */
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await getSupabase();
     const body = await request.json();
     const { agent_id, task_id, result, status = 'completed' } = body;
 
@@ -141,6 +149,7 @@ function extractTokens(result: string): number {
  * Guarda vulnerabilidades en agent_vulnerabilities
  */
 async function saveVulnerabilities(agentId: string, taskId: string, result: string) {
+  const supabase = await getSupabase();
   const vulns = parseVulnerabilities(result);
   
   for (const vuln of vulns) {
@@ -187,6 +196,7 @@ function parseVulnerabilities(result: string) {
  * Guarda bugs en agent_bugs
  */
 async function saveBugs(agentId: string, taskId: string, result: string) {
+  const supabase = await getSupabase();
   const bugs = parseBugs(result);
   
   for (const bug of bugs) {

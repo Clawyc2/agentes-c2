@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error('Missing Supabase environment variables');
+}
+
+// Dynamic import to avoid build issues
+const getSupabase = async () => {
+  const { createClient } = await import('@supabase/supabase-js');
+  return createClient(supabaseUrl, supabaseKey);
+};
 
 /**
  * POST /api/agents/tasks
@@ -18,6 +25,7 @@ const supabase = createClient(
  */
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await getSupabase();
     const body = await request.json();
     const { agent_id, title, description, priority = 'medium' } = body;
 
@@ -97,6 +105,7 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
+    const supabase = await getSupabase();
     const { searchParams } = new URL(request.url);
     const agent_id = searchParams.get('agent_id');
     const limit = parseInt(searchParams.get('limit') || '10');
