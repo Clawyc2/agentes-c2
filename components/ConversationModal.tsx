@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, Send, Loader2, User, Bot, Clock } from 'lucide-react';
-import { getConversations, createConversation } from '@/lib/supabase';
+import { X, Send, Loader2, User, Bot, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { getConversations, createConversation, getTasksByAgent } from '@/lib/supabase';
 
 type Message = {
   id: string;
@@ -14,14 +14,27 @@ type Message = {
   created_at: string;
 };
 
+type Task = {
+  id: string;
+  title: string;
+  description: string;
+  status: string;
+  priority: string;
+  tokens_used: number;
+  created_at: string;
+};
+
 type Agent = {
   id: string;
   name: string;
   model: string;
   specialty: string;
+  total_tokens: number;
+  tasks_completed: number;
+  tasks_failed: number;
 };
 
-// Modal de Conversación
+// Modal de Conversación/Logs
 export function ConversationModal({ 
   agent, 
   isOpen, 
@@ -31,55 +44,26 @@ export function ConversationModal({
   isOpen: boolean;
   onClose: () => void;
 }) {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState('');
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(false);
-  const [sending, setSending] = useState(false);
 
-  // Cargar conversaciones
+  // Cargar tareas del agente
   useEffect(() => {
     if (agent && isOpen) {
-      loadMessages();
+      loadTasks();
     }
   }, [agent, isOpen]);
 
-  const loadMessages = async () => {
+  const loadTasks = async () => {
     if (!agent) return;
     setLoading(true);
     try {
-      const convs = await getConversations(agent.id);
-      setMessages(convs);
+      const agentTasks = await getTasksByAgent(agent.id);
+      setTasks(agentTasks);
     } catch (error) {
-      console.error('Error loading conversations:', error);
+      console.error('Error loading tasks:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleSend = async () => {
-    if (!input.trim() || !agent) return;
-    
-    const userMessage = input.trim();
-    setInput('');
-    setSending(true);
-
-    try {
-      // Guardar mensaje del usuario
-      await createConversation({
-        agent_id: agent.id,
-        role: 'user',
-        content: userMessage,
-      });
-
-      // Aquí iría la lógica para enviar al modelo del agente
-      // Por ahora solo guardamos el mensaje del usuario
-      
-      // Recargar mensajes
-      await loadMessages();
-    } catch (error) {
-      console.error('Error sending message:', error);
-    } finally {
-      setSending(false);
     }
   };
 
@@ -94,6 +78,24 @@ export function ConversationModal({
     return `hace ${minutes}m`;
   };
 
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'completed': return <CheckCircle className="w-4 h-4 text-green-400" />;
+      case 'in_progress': return <Loader2 className="w-4 h-4 text-orange-400 animate-spin" />;
+      case 'failed': return <AlertCircle className="w-4 h-4 text-red-400" />;
+      default: return <Clock className="w-4 h-4 text-gray-400" />;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed': return 'border-green-500/30 bg-green-500/10';
+      case 'in_progress': return 'border-orange-500/30 bg-orange-500/10';
+      case 'failed': return 'border-red-500/30 bg-red-500/10';
+      default: return 'border-gray-500/30 bg-gray-500/10';
+    }
+  };
+
   if (!isOpen || !agent) return null;
 
   const specialtyIcons: Record<string, string> = {
@@ -104,6 +106,7 @@ export function ConversationModal({
     analysis: '📊',
     botmaker: '🤖',
     testing: '🧪',
+    security: '🔒',
     general: '🤖',
   };
 
@@ -129,8 +132,8 @@ export function ConversationModal({
               {specialtyIcons[agent.specialty] || '🤖'}
             </div>
             <div>
-              <h2 className="font-bold">📋 Historial - {agent.name}</h2>
-              <p className="text-xs text-[var(--text2)]">{agent.model}</p>
+              <h2 className="font-bold">📋 Actividad - {agent.name}</h2>
+              <p className="text-xs text-[var(--text2)]">{agent.model} • {agent.total_tokens.toLocaleString()} tokens totales</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-[var(--bg3)] rounded-lg">
@@ -138,43 +141,65 @@ export function ConversationModal({
           </button>
         </div>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-[300px] max-h-[50vh]">
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-3 p-4 border-b border-[var(--gray)]">
+          <div className="bg-[var(--bg3)] rounded-lg p-3 text-center">
+            <p className="text-2xl font-bold text-green-400">{agent.tasks_completed}</p>
+            <p className="text-xs text-[var(--text2)]">Completadas</p>
+          </div>
+          <div className="bg-[var(--bg3)] rounded-lg p-3 text-center">
+            <p className="text-2xl font-bold text-red-400">{agent.tasks_failed}</p>
+            <p className="text-xs text-[var(--text2)]">Fallidas</p>
+          </div>
+          <div className="bg-[var(--bg3)] rounded-lg p-3 text-center">
+            <p className="text-2xl font-bold text-purple-400">{tasks.length}</p>
+            <p className="text-xs text-[var(--text2)]">Total Tareas</p>
+          </div>
+        </div>
+
+        {/* Tasks List */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[300px] max-h-[50vh]">
           {loading ? (
             <div className="flex items-center justify-center h-full">
               <Loader2 className="w-8 h-8 animate-spin text-orange-400" />
             </div>
-          ) : messages.length === 0 ? (
+          ) : tasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="text-4xl mb-3">📭</div>
-              <p className="text-[var(--text2)]">Sin actividad registrada</p>
-              <p className="text-xs text-[var(--text2)] mt-1">Las tareas delegadas aparecerán aquí</p>
+              <p className="text-[var(--text2)]">Sin tareas registradas</p>
+              <p className="text-xs text-[var(--text2)] mt-1">Las tareas delegadas por Clawy aparecerán aquí</p>
             </div>
           ) : (
-            messages.map((msg) => (
+            tasks.map((task) => (
               <div
-                key={msg.id}
-                className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
+                key={task.id}
+                className={`border rounded-xl p-4 ${getStatusColor(task.status)}`}
               >
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                  msg.role === 'user' 
-                    ? 'bg-blue-500/20 text-blue-400' 
-                    : 'bg-orange-500/20 text-orange-400'
-                }`}>
-                  {msg.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
-                </div>
-                <div className={`max-w-[80%] rounded-2xl p-3 ${
-                  msg.role === 'user'
-                    ? 'bg-blue-500/20 text-right'
-                    : 'bg-[var(--bg3)]'
-                }`}>
-                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                  <div className="flex items-center gap-2 mt-2 text-xs text-[var(--text2)]">
-                    <Clock className="w-3 h-3" />
-                    {timeAgo(msg.created_at)}
-                    {msg.tokens_used > 0 && (
-                      <span className="text-purple-400">⚡ {msg.tokens_used} tokens</span>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      {getStatusIcon(task.status)}
+                      <h3 className="font-semibold text-sm">{task.title}</h3>
+                    </div>
+                    {task.description && (
+                      <p className="text-xs text-[var(--text2)] mb-2">{task.description}</p>
                     )}
+                    <div className="flex items-center gap-3 text-xs text-[var(--text2)]">
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {timeAgo(task.created_at)}
+                      </span>
+                      {task.tokens_used > 0 && (
+                        <span className="text-purple-400">⚡ {task.tokens_used.toLocaleString()} tokens</span>
+                      )}
+                      <span className={`px-2 py-0.5 rounded text-xs ${
+                        task.priority === 'high' ? 'bg-red-500/20 text-red-400' :
+                        task.priority === 'medium' ? 'bg-orange-500/20 text-orange-400' :
+                        'bg-gray-500/20 text-gray-400'
+                      }`}>
+                        {task.priority}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -182,10 +207,10 @@ export function ConversationModal({
           )}
         </div>
 
-        {/* Input - READ ONLY, no escribir */}
+        {/* Footer */}
         <div className="p-4 border-t border-[var(--gray)] bg-[var(--bg3)]/50">
           <div className="text-center text-xs text-[var(--text2)]">
-            🔒 <span className="text-orange-400 font-medium">Solo lectura</span> - Las conversaciones se generan cuando Clawy delega tareas a los agentes
+            🐾 <span className="text-orange-400 font-medium">Mission Control</span> - Sistema de monitoreo de agentes
           </div>
         </div>
       </motion.div>

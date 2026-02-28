@@ -1,29 +1,28 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 // Credenciales de acceso para Agentes C2
 const USERNAME = 'clawy'
 const PASSWORD = 'AgentesC2_2026!'
 
-export async function middleware(request: NextRequest) {
-  // 1. PRIMERO: Verificar autenticación básica
+export function middleware(request: NextRequest) {
+  // Verificar autenticación básica
   const authCookie = request.cookies.get('agentes_c2_auth')
   
-  if (authCookie?.value !== 'authenticated') {
-    // Verificar header de autenticación básica
-    const authHeader = request.headers.get('authorization')
+  if (authCookie?.value === 'authenticated') {
+    return NextResponse.next()
+  }
+
+  // Verificar header de autenticación básica
+  const authHeader = request.headers.get('authorization')
+  
+  if (authHeader) {
+    const auth = Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':')
+    const user = auth[0]
+    const pass = auth[1]
     
-    if (authHeader) {
-      const auth = Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':')
-      const user = auth[0]
-      const pass = auth[1]
-      
-      if (user !== USERNAME || pass !== PASSWORD) {
-        return createUnauthorizedResponse()
-      }
-      
-      // Autenticación exitosa - establecer cookie y continuar
-      const response = await handleSupabaseSession(request)
+    if (user === USERNAME && pass === PASSWORD) {
+      // Autenticación exitosa - establecer cookie
+      const response = NextResponse.next()
       response.cookies.set('agentes_c2_auth', 'authenticated', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -32,63 +31,17 @@ export async function middleware(request: NextRequest) {
       })
       return response
     }
-    
-    // No autenticado - mostrar login
-    return createUnauthorizedResponse()
   }
 
-  // 2. SEGUNDO: Ya autenticado, manejar sesión de Supabase
-  return await handleSupabaseSession(request)
-}
-
-async function handleSupabaseSession(request: NextRequest) {
-  let response = NextResponse.next({
-    request,
-  })
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          response = NextResponse.next({
-            request,
-          })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
-          )
-        },
-      },
-    }
-  )
-
-  // Solo proteger /perfil, /ranking, /badges (NO /aprender porque maneja OAuth callback)
-  const protectedRoutes = ['/perfil', '/ranking', '/badges']
-  const isProtected = protectedRoutes.some(route => 
-    request.nextUrl.pathname.startsWith(route)
-  )
-
-  if (isProtected) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/'
-      return NextResponse.redirect(url)
-    }
+  // No autenticado - mostrar login
+  const url = request.nextUrl.clone()
+  
+  // Si es una ruta de API o assets, retornar 401
+  if (url.pathname.startsWith('/_next') || url.pathname.startsWith('/api')) {
+    return new NextResponse('Unauthorized', { status: 401 })
   }
 
-  return response
-}
-
-function createUnauthorizedResponse() {
+  // Para rutas normales, mostrar página de login
   return new NextResponse(
     `<!DOCTYPE html>
     <html lang="es">
