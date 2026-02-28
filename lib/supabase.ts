@@ -14,13 +14,28 @@ export async function getAgents() {
   const { data, error } = await supabase
     .from('c2_agents')
     .select('*')
-    .order('created_at', { ascending: false })
   
   if (error) {
     console.error('Error fetching agents:', error)
     return []
   }
-  return data || []
+  
+  // Ordenar por jerarquía (lider primero, luego senior, mid, junior, especialista)
+  const rankOrder: Record<string, number> = {
+    'lider': 1,
+    'senior': 2,
+    'mid': 3,
+    'junior': 4,
+    'especialista': 5,
+  }
+  
+  const sortedData = (data || []).sort((a, b) => {
+    const orderA = rankOrder[a.rank] || 99
+    const orderB = rankOrder[b.rank] || 99
+    return orderA - orderB
+  })
+  
+  return sortedData
 }
 
 export async function getAgent(id: string) {
