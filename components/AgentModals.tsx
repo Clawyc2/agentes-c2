@@ -174,6 +174,7 @@ export function EditAgentModal({
             {/* Reglas */}
             <div>
               <label className="block text-sm text-[var(--text2)] mb-1">Reglas / Comportamiento</label>
+              <p className="text-xs text-orange-400 mb-2">💡 Tip: Usa el botón naranja de abajo para subir un archivo .MD</p>
               <textarea
                 value={formData.rules}
                 onChange={(e) => setFormData({ ...formData, rules: e.target.value })}
@@ -186,15 +187,12 @@ export function EditAgentModal({
 
           {/* Botones */}
           <div className="space-y-3 mt-6">
-            {/* Upload .MD Button */}
-            <label className="cursor-pointer w-full inline-flex items-center justify-center gap-2 px-4 py-3 text-sm bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50 rounded-lg transition-colors text-orange-400 font-medium">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
-              📄 Subir archivo .MD para reemplazar reglas
+            {/* Upload .MD Button - REDESIGNED */}
+            <div className="w-full">
               <input
                 type="file"
                 accept=".md,.markdown"
+                id="md-upload-input"
                 className="hidden"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
@@ -208,7 +206,16 @@ export function EditAgentModal({
                   }
                 }}
               />
-            </label>
+              <button
+                type="button"
+                onClick={() => document.getElementById('md-upload-input')?.click()}
+                className="w-full px-4 py-4 bg-gradient-to-r from-orange-500/30 to-amber-500/30 hover:from-orange-500/40 hover:to-amber-500/40 border-2 border-orange-400 rounded-xl transition-all text-orange-300 font-bold text-base flex items-center justify-center gap-3"
+              >
+                <span className="text-2xl">📄</span>
+                <span>SUBIR ARCHIVO .MD</span>
+                <span className="text-2xl">📁</span>
+              </button>
+            </div>
             
             {/* Cancel & Save */}
             <div className="flex gap-3">
