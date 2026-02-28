@@ -146,12 +146,18 @@ function Sidebar({ activeTab, onTabChange, collapsed, onClose }: {
 }
 
 // Componente de Header Stats
-function HeaderStats({ stats }: { stats: { totalAgents: number; activeAgents: number; totalTasks: number; completedTasks: number } }) {
+function HeaderStats({ stats }: { stats: { totalAgents: number; activeAgents: number; totalTasks: number; completedTasks: number; totalTokens?: number } }) {
+  const formatTokens = (tokens: number) => {
+    if (tokens >= 1000000) return `${(tokens / 1000000).toFixed(1)}M`;
+    if (tokens >= 1000) return `${(tokens / 1000).toFixed(1)}K`;
+    return tokens.toString();
+  };
+
   const statItems = [
     { label: 'Agentes', value: stats.activeAgents || 0, icon: Users, color: 'text-green-400' },
     { label: 'Tareas', value: stats.totalTasks || 0, icon: CheckCircle, color: 'text-orange-400' },
     { label: 'Completadas', value: stats.completedTasks || 0, icon: Zap, color: 'text-purple-400' },
-    { label: 'Total Agentes', value: stats.totalAgents || 0, icon: TrendingUp, color: 'text-cyan-400' },
+    { label: 'Tokens', value: formatTokens(stats.totalTokens || 0), icon: TrendingUp, color: 'text-cyan-400' },
   ];
 
   return (
@@ -333,7 +339,7 @@ function TaskItem({ task }: { task: Task }) {
 function DashboardView({ agents, tasks, stats, onEdit, onDelete, onView, onChat }: { 
   agents: Agent[]; 
   tasks: Task[];
-  stats: { totalAgents: number; activeAgents: number; totalTasks: number; completedTasks: number };
+  stats: { totalAgents: number; activeAgents: number; totalTasks: number; completedTasks: number; totalTokens?: number };
   onEdit: (agent: Agent) => void;
   onDelete: (agent: Agent) => void;
   onView: (agent: Agent) => void;

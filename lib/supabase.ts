@@ -200,12 +200,20 @@ export async function getDashboardStats() {
     .select('*', { count: 'exact', head: true })
     .eq('status', 'pending')
   
+  // Get total tokens from all agents
+  const { data: agents } = await supabase
+    .from('c2_agents')
+    .select('total_tokens')
+  
+  const totalTokens = agents?.reduce((sum, agent) => sum + (agent.total_tokens || 0), 0) || 0
+  
   return {
     totalAgents: totalAgents || 0,
     activeAgents: activeAgents || 0,
     totalTasks: totalTasks || 0,
     completedTasks: completedTasks || 0,
     pendingTasks: pendingTasks || 0,
+    totalTokens: totalTokens,
   }
 }
 
